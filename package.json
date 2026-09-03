@@ -1,0 +1,16 @@
+{
+  "name": "saveur",
+  "version": "1.0.0",
+  "description": "Saveur — Tu guía gastronómica personal",
+  "scripts": {
+    "build": "echo 'No build step needed for vanilla HTML/JS/CSS'"
+  },
+  "dependencies": {
+    "@capacitor/android": "^5.0.0",
+    "@capacitor/cli": "^5.0.0",
+    "@capacitor/core": "^5.0.0",
+    "@capacitor/geolocation": "^5.0.0",
+    "@capacitor/camera": "^5.0.0"
+  },
+  "devDependencies": {}
+}

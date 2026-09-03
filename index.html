@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0D0F14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Saveur</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo">S</div>
+    <h1 class="splash-title">Saveur</h1>
+    <p class="splash-sub">Tu guía gastronómica personal</p>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app" class="hidden">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo-mark">S</span>
+      <span class="app-name">Saveur</span>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" id="searchToggle" title="Buscar">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <button class="icon-btn" id="sortBtn" title="Ordenar">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- SEARCH BAR -->
+  <div id="searchBar" class="search-bar hidden">
+    <input type="text" id="searchInput" placeholder="Buscar lugar..." autocomplete="off" />
+    <button class="icon-btn" id="searchClose">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <!-- FILTER STRIP -->
+  <div class="filter-strip">
+    <div class="filter-chips" id="categoryChips">
+      <button class="chip active" data-cat="all">Todo</button>
+      <button class="chip" data-cat="coffee">☕ Café</button>
+      <button class="chip" data-cat="bar">🍸 Copas</button>
+      <button class="chip" data-cat="lunch">🍽 Almuerzo</button>
+      <button class="chip" data-cat="dinner">🌙 Cena</button>
+      <button class="chip" data-cat="brunch">🥐 Brunch</button>
+    </div>
+  </div>
+
+  <!-- CUISINE FILTER (visible only when food category active) -->
+  <div class="cuisine-strip hidden" id="cuisineStrip">
+    <div class="filter-chips" id="cuisineChips">
+      <button class="chip-sm active" data-cuisine="all">Todas</button>
+      <button class="chip-sm" data-cuisine="spanish">Española</button>
+      <button class="chip-sm" data-cuisine="italian">Italiana</button>
+      <button class="chip-sm" data-cuisine="japanese">Japonesa</button>
+      <button class="chip-sm" data-cuisine="mediterranean">Mediterránea</button>
+      <button class="chip-sm" data-cuisine="mexican">Mexicana</button>
+      <button class="chip-sm" data-cuisine="american">Americana</button>
+      <button class="chip-sm" data-cuisine="asian">Asiática</button>
+      <button class="chip-sm" data-cuisine="other">Otra</button>
+    </div>
+  </div>
+
+  <!-- SORT / STATUS FILTER BAR -->
+  <div class="sort-status-bar" id="sortPanel">
+    <div class="sort-row">
+      <span class="sort-label">Ordenar por:</span>
+      <div class="sort-options">
+        <button class="sort-opt active" data-sort="added">Añadido</button>
+        <button class="sort-opt" data-sort="price">Precio</button>
+        <button class="sort-opt" data-sort="rating">Valoración</button>
+        <button class="sort-opt" data-sort="distance">Distancia</button>
+      </div>
+    </div>
+    <div class="sort-row">
+      <span class="sort-label">Estado:</span>
+      <div class="sort-options">
+        <button class="sort-opt active" data-status="all">Todos</button>
+        <button class="sort-opt" data-status="wishlist">Por visitar</button>
+        <button class="sort-opt" data-status="visited">Visitados</button>
+      </div>
+    </div>
+    <div class="sort-row">
+      <label class="toggle-row">
+        <span>Ordenar por distancia (GPS)</span>
+        <div class="toggle" id="gpsToggle">
+          <input type="checkbox" id="gpsCheck" />
+          <span class="toggle-slider"></span>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <!-- PLACE LIST -->
+  <main class="place-list" id="placeList">
+    <!-- empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">🍽</div>
+      <p class="empty-title">Sin lugares todavía</p>
+      <p class="empty-sub">Añade tu primer restaurante o bar con el botón +</p>
+    </div>
+  </main>
+
+  <!-- FAB -->
+  <button class="fab" id="fabAdd" title="Añadir lugar">
+    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-view="list">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Lugares</span>
+    </button>
+    <button class="nav-item" data-view="map">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span>Mapa</span>
+    </button>
+    <button class="nav-item" data-view="stats">
+      <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      <span>Estadísticas</span>
+    </button>
+  </nav>
+
+  <!-- MAP VIEW -->
+  <div id="mapView" class="view-panel hidden">
+    <div id="leafletMap" style="width:100%;height:100%;"></div>
+  </div>
+
+  <!-- STATS VIEW -->
+  <div id="statsView" class="view-panel hidden">
+    <div class="stats-content">
+      <h2 class="stats-title">Tu panorama gastronómico</h2>
+      <div class="stat-cards" id="statCards"></div>
+      <div class="stat-section">
+        <h3>Por categoría</h3>
+        <div id="catChart" class="bar-chart"></div>
+      </div>
+      <div class="stat-section">
+        <h3>Gasto medio</h3>
+        <div id="priceChart" class="bar-chart"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- MODAL: ADD / EDIT PLACE -->
+<div id="modalOverlay" class="modal-overlay hidden">
+  <div class="modal" id="placeModal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Nuevo lugar</h2>
+      <button class="icon-btn" id="modalClose">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+
+      <!-- SEARCH ONLINE -->
+      <div class="field-group">
+        <label>Buscar en internet</label>
+        <div class="online-search-row">
+          <input type="text" id="onlineSearch" placeholder="Nombre del lugar..." />
+          <button class="btn-secondary" id="fetchInfoBtn">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Buscar
+          </button>
+        </div>
+        <div id="onlineResults" class="online-results hidden"></div>
+      </div>
+
+      <div class="divider-label">o introduce manualmente</div>
+
+      <!-- FORM -->
+      <div class="field-group">
+        <label>Nombre *</label>
+        <input type="text" id="fName" placeholder="Nombre del lugar" />
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>Categoría *</label>
+          <select id="fCategory">
+            <option value="coffee">☕ Café</option>
+            <option value="bar">🍸 Copas</option>
+            <option value="lunch">🍽 Almuerzo</option>
+            <option value="dinner">🌙 Cena</option>
+            <option value="brunch">🥐 Brunch</option>
+          </select>
+        </div>
+        <div class="field-group" id="cuisineField">
+          <label>Tipo de cocina</label>
+          <select id="fCuisine">
+            <option value="spanish">Española</option>
+            <option value="italian">Italiana</option>
+            <option value="japanese">Japonesa</option>
+            <option value="mediterranean">Mediterránea</option>
+            <option value="mexican">Mexicana</option>
+            <option value="american">Americana</option>
+            <option value="asian">Asiática</option>
+            <option value="other">Otra</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Dirección</label>
+        <div class="address-row">
+          <input type="text" id="fAddress" placeholder="Calle, número, ciudad..." />
+          <button class="btn-icon-sm" id="gpsAddrBtn" title="Usar mi ubicación">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+          </button>
+        </div>
+        <div id="geocodeStatus" class="geocode-status"></div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>Estado</label>
+          <select id="fStatus">
+            <option value="wishlist">Por visitar</option>
+            <option value="visited">Visitado</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Precio medio (€/persona)</label>
+          <input type="number" id="fPrice" placeholder="25" min="0" step="1" />
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Tu valoración</label>
+        <div class="star-rating" id="starRating">
+          <span class="star" data-val="1">★</span>
+          <span class="star" data-val="2">★</span>
+          <span class="star" data-val="3">★</span>
+          <span class="star" data-val="4">★</span>
+          <span class="star" data-val="5">★</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>Horario</label>
+        <input type="text" id="fHours" placeholder="Lun-Vie 09:00-23:00, Sáb-Dom 10:00-00:00" />
+      </div>
+
+      <div class="field-group">
+        <label>Teléfono</label>
+        <input type="tel" id="fPhone" placeholder="+34 91 000 00 00" />
+      </div>
+
+      <div class="field-group">
+        <label>Web / Redes</label>
+        <input type="url" id="fWebsite" placeholder="https://..." />
+      </div>
+
+      <div class="field-group">
+        <label>Notas privadas</label>
+        <textarea id="fNotes" rows="3" placeholder="Pide la mesa de la ventana, evitar los viernes..."></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>Opinión pública (si la has dejado)</label>
+        <textarea id="fReview" rows="2" placeholder="Excelente servicio, la paella es increíble..."></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>Foto del lugar</label>
+        <div class="photo-upload" id="photoUpload">
+          <input type="file" id="fPhoto" accept="image/*" capture="environment" />
+          <div class="photo-preview" id="photoPreview">
+            <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            <span>Toca para añadir foto</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- INFO FETCHED ONLINE -->
+      <div id="onlineInfoPanel" class="online-info-panel hidden">
+        <div class="online-info-header">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+          Información obtenida online
+        </div>
+        <div id="onlineInfoContent"></div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn-danger hidden" id="deleteBtn">Eliminar</button>
+      <div class="modal-footer-right">
+        <button class="btn-secondary" id="cancelBtn">Cancelar</button>
+        <button class="btn-primary" id="saveBtn">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PLACE DETAIL -->
+<div id="detailOverlay" class="modal-overlay hidden">
+  <div class="modal modal-detail" id="detailModal">
+    <div class="detail-hero" id="detailHero">
+      <button class="icon-btn detail-close" id="detailClose">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="detail-badge" id="detailBadge"></div>
+    </div>
+    <div class="modal-body detail-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" id="detailEditBtn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Editar
+      </button>
+      <button class="btn-primary" id="detailDirectionsBtn">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Cómo llegar
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SORT MODAL -->
+<div id="sortModalOverlay" class="modal-overlay hidden">
+  <div class="modal modal-sm" id="sortModal">
+    <div class="modal-header">
+      <h2>Opciones</h2>
+      <button class="icon-btn" id="sortModalClose">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="sortModalBody"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" class="toast hidden"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="js/db.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
