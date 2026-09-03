@@ -29,7 +29,10 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
-
+        
+      - name: Generate Android icons
+        run: npx @capacitor/assets generate --android
+        
       - name: Add Android platform
         run: |
           npx cap add android || true
