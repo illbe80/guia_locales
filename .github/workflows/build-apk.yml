@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (Signed)
 
 on:
   push:
@@ -35,25 +35,71 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/saveur-release.keystore
+
+      - name: Create keystore.properties
+        run: |
+          cat > android/keystore.properties << EOF
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          storeFile=saveur-release.keystore
+          EOF
+
+      - name: Configure signing in build.gradle
+        run: |
+          # Añadir configuración de firmado al final de android/app/build.gradle
+          cat >> android/app/build.gradle << 'EOF'
+
+          // ===== Signing config (añadido por CI) =====
+          def keystorePropertiesFile = rootProject.file("keystore.properties")
+          def keystoreProperties = new Properties()
+          if (keystorePropertiesFile.exists()) {
+              keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+          }
+
+          android {
+              signingConfigs {
+                  release {
+                      if (keystorePropertiesFile.exists()) {
+                          keyAlias keystoreProperties['keyAlias']
+                          keyPassword keystoreProperties['keyPassword']
+                          storeFile file(keystoreProperties['storeFile'])
+                          storePassword keystoreProperties['storePassword']
+                      }
+                  }
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.release
+                      minifyEnabled false
+                      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+                  }
+              }
+          }
+          EOF
+
       - name: Make gradlew executable
         run: chmod +x android/gradlew
 
-      - name: Build debug APK
+      - name: Build signed Release APK
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
-      - name: Upload APK artifact
+      - name: Upload signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: saveur-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: saveur-release-apk
+          path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
-      - name: Create Release (on tag)
+      - name: Create GitHub Release (solo si es un tag)
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: android/app/build/outputs/apk/debug/app-debug.apk
+          files: android/app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
