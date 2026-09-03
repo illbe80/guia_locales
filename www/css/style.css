@@ -25,6 +25,8 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+.hidden { display: none !important; }
+
 html, body {
   height: 100%; width: 100%;
   overflow: hidden;
@@ -257,10 +259,16 @@ html, body {
 
 /* ===== BOTTOM NAV ===== */
 .bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   height: var(--nav-h);
-  display: flex; align-items: center;
-  background: var(--bg2); border-top: 1px solid var(--border);
-  flex-shrink: 0; z-index: 50;
+  display: flex;
+  align-items: center;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  z-index: 50;
 }
 .nav-item {
   flex: 1; display: flex; flex-direction: column;
@@ -538,3 +546,31 @@ select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .leaflet-tile { filter: brightness(0.7) saturate(0.5); }
 .leaflet-popup-content-wrapper { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); }
 .leaflet-popup-tip { background: var(--bg2); }
+
+/* ===== CARD DIRECTIONS BUTTON ===== */
+.card-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+.card-directions-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gold-glow);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.card-directions-btn:hover {
+  background: var(--gold);
+  color: var(--bg);
+  border-color: var(--gold);
+}
+
