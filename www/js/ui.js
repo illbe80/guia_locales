@@ -54,6 +54,14 @@ const UI = (() => {
     const distHtml = (distKm !== undefined)
       ? `<div class="card-distance">📍 ${Geo.formatDistance(distKm)}</div>` : '';
 
+    const canNavigate = !!(place.lat && place.lng) || !!place.address;
+    const directionsBtn = canNavigate
+      ? `<button class="card-directions-btn" type="button" title="Cómo llegar">
+           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+           Cómo llegar
+         </button>`
+      : '';
+
     card.innerHTML = `
       ${photoHtml}
       <div class="card-body">
@@ -69,6 +77,7 @@ const UI = (() => {
         </div>
         ${place.address ? `<div class="card-address"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${place.address}</div>` : ''}
         ${distHtml}
+        ${directionsBtn ? `<div class="card-actions">${directionsBtn}</div>` : ''}
       </div>`;
     return card;
   }
