@@ -11,6 +11,7 @@ let editingId = null;
 let currentRating = 0;
 let pendingPhotoDataURL = null;
 let pendingOnlineInfo = null;
+let pendingCoords = null;  // { lat, lng } from online search
 let mapInstance = null;
 let mapMarkers = [];
 
@@ -70,6 +71,13 @@ function renderList() {
     }
     const card = UI.renderCard(p, distKm);
     card.addEventListener('click', () => openDetail(p.id));
+    const dirBtn = card.querySelector('.card-directions-btn');
+    if (dirBtn) {
+      dirBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openDirections(p);
+      });
+    }
     list.appendChild(card);
   });
 }
@@ -123,11 +131,16 @@ function closeDetail() {
 }
 
 function openDirections(p) {
+  let url;
   if (p.lat && p.lng) {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`, '_blank');
+    url = `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
   } else if (p.address) {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address)}`, '_blank');
+    url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(p.address)}`;
+  } else {
+    UI.showToast('No hay ubicación disponible');
+    return;
   }
+  window.open(url, '_blank');
 }
 
 function catLabel(cat) {
@@ -142,6 +155,7 @@ function openModal(id = null) {
   currentRating = 0;
   pendingPhotoDataURL = null;
   pendingOnlineInfo = null;
+  pendingCoords = null;
 
   document.getElementById('modalTitle').textContent = id ? 'Editar lugar' : 'Nuevo lugar';
   document.getElementById('deleteBtn').classList.toggle('hidden', !id);
@@ -207,10 +221,15 @@ async function savePlace() {
   const address = document.getElementById('fAddress').value.trim();
   let lat = null, lng = null;
 
-  if (address) {
+  // Preferir coordenadas de la búsqueda online si existen
+  if (pendingCoords && pendingCoords.lat && pendingCoords.lng) {
+    lat = pendingCoords.lat;
+    lng = pendingCoords.lng;
+  } else if (address) {
     try {
       const coords = await Geo.geocodeAddress(address);
-      lat = coords.lat; lng = coords.lng;
+      lat = coords.lat;
+      lng = coords.lng;
     } catch(e) { /* coords not found, ok */ }
   }
 
@@ -231,7 +250,7 @@ async function savePlace() {
     review:   document.getElementById('fReview').value.trim(),
     photo:    pendingPhotoDataURL,
     onlineInfo: pendingOnlineInfo,
-    added:    editingId ? (places.find(p=>p.id===editingId)?.added || new Date().toISOString()) : new Date().toISOString(),
+    added:    editingId ? (places.find(p => p.id === editingId)?.added || new Date().toISOString()) : new Date().toISOString(),
     updated:  new Date().toISOString()
   };
 
@@ -320,35 +339,71 @@ function renderOnlineResults(results) {
   container.querySelectorAll('.online-result-item').forEach((el, i) => {
     el.addEventListener('click', async () => {
       const r = results[i];
-      document.getElementById('fName').value = r.name;
+
+      // Rellenar datos básicos inmediatamente
+      document.getElementById('fName').value = r.name || '';
       document.getElementById('fAddress').value = r.address || '';
       container.classList.add('hidden');
 
+      // Guardar coordenadas de la búsqueda
+      if (r.lat && r.lng) {
+        pendingCoords = { lat: r.lat, lng: r.lng };
+      }
+
       // Auto-map category from OSM type
-      const catMap = { restaurant:'dinner', cafe:'coffee', bar:'bar', pub:'bar', fast_food:'lunch' };
-      if (catMap[r.type]) document.getElementById('fCategory').value = catMap[r.type];
+      const catMap = {
+        restaurant: 'dinner', cafe: 'coffee', bar: 'bar',
+        pub: 'bar', fast_food: 'lunch', biergarten: 'bar',
+        ice_cream: 'coffee', bistro: 'dinner', wine_bar: 'bar'
+      };
+      if (catMap[r.type]) {
+        document.getElementById('fCategory').value = catMap[r.type];
+      }
       toggleCuisineField();
+
+      // Panel de info online
+      const panel = document.getElementById('onlineInfoPanel');
+      const content = document.getElementById('onlineInfoContent');
+      content.innerHTML = '<span style="color:var(--muted);font-size:13px">Cargando datos adicionales…</span>';
+      panel.classList.remove('hidden');
 
       // Fetch details
       try {
         const info = await API.getDetails(r.osmType, r.osmId);
         if (info) {
           pendingOnlineInfo = info;
-          if (info.hours && !document.getElementById('fHours').value) document.getElementById('fHours').value = info.hours;
-          if (info.phone && !document.getElementById('fPhone').value) document.getElementById('fPhone').value = info.phone;
-          if (info.website && !document.getElementById('fWebsite').value) document.getElementById('fWebsite').value = info.website;
+          if (info.hours && !document.getElementById('fHours').value)
+            document.getElementById('fHours').value = info.hours;
+          if (info.phone && !document.getElementById('fPhone').value)
+            document.getElementById('fPhone').value = info.phone;
+          if (info.website && !document.getElementById('fWebsite').value)
+            document.getElementById('fWebsite').value = info.website;
+          if (info.address && !document.getElementById('fAddress').value)
+            document.getElementById('fAddress').value = info.address;
+          if (info.lat && info.lng) {
+            pendingCoords = { lat: info.lat, lng: info.lng };
+          }
           if (info.cuisine) {
             const cuisineMap = {
-              spanish:'spanish', italian:'italian', japanese:'japanese',
-              mediterranean:'mediterranean', mexican:'mexican', american:'american', asian:'asian'
+              spanish: 'spanish', italian: 'italian', japanese: 'japanese',
+              mediterranean: 'mediterranean', mexican: 'mexican',
+              american: 'american', asian: 'asian'
             };
-            for (const [k,v] of Object.entries(cuisineMap)) {
-              if (info.cuisine.toLowerCase().includes(k)) { document.getElementById('fCuisine').value = v; break; }
+            for (const [k, v] of Object.entries(cuisineMap)) {
+              if (info.cuisine.toLowerCase().includes(k)) {
+                document.getElementById('fCuisine').value = v;
+                break;
+              }
             }
           }
           showOnlineInfoPanel(info);
+        } else {
+          content.innerHTML = '<span style="color:var(--muted);font-size:13px">No hay datos adicionales disponibles</span>';
         }
-      } catch(e) { /* details not critical */ }
+      } catch (e) {
+        console.warn('No se pudieron cargar detalles:', e);
+        content.innerHTML = '<span style="color:var(--muted);font-size:13px">No hay datos adicionales disponibles</span>';
+      }
     });
   });
 }
@@ -421,12 +476,47 @@ function updateMapMarkers() {
     html: `<div style="background:var(--gold,#C9A96E);width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
     iconSize:[16,16], iconAnchor:[8,8]
   });
-  places.forEach(p => {
+    places.forEach(p => {
     if (!p.lat || !p.lng) return;
+    const popupHtml = `
+      <div style="min-width:160px">
+        <b style="font-size:14px">${p.name}</b>
+        ${p.address ? `<div style="margin:4px 0 8px;font-size:12px;opacity:.8">${p.address}</div>` : '<div style="height:8px"></div>'}
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button type="button" class="map-popup-btn map-popup-detail" data-id="${p.id}"
+            style="flex:1;background:#C9A96E;color:#0D0F14;border:none;border-radius:6px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer">
+            Ver ficha
+          </button>
+          <button type="button" class="map-popup-btn map-popup-directions" data-id="${p.id}"
+            style="flex:1;background:transparent;color:#C9A96E;border:1px solid #C9A96E;border-radius:6px;padding:6px 8px;font-size:12px;font-weight:600;cursor:pointer">
+            Cómo llegar
+          </button>
+        </div>
+      </div>`;
     const m = L.marker([p.lat, p.lng], { icon: goldIcon })
-      .bindPopup(`<b>${p.name}</b><br>${p.address||''}`)
+      .bindPopup(popupHtml)
       .addTo(mapInstance);
-    m.on('click', () => openDetail(p.id));
+    m.on('popupopen', () => {
+      const popupEl = m.getPopup().getElement();
+      if (!popupEl) return;
+      const detailBtn = popupEl.querySelector('.map-popup-detail');
+      const dirBtn = popupEl.querySelector('.map-popup-directions');
+      if (detailBtn) {
+        detailBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          m.closePopup();
+          openDetail(p.id);
+        };
+      }
+      if (dirBtn) {
+        dirBtn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openDirections(p);
+        };
+      }
+    });
     mapMarkers.push(m);
   });
   if (mapMarkers.length && !editingId) {
